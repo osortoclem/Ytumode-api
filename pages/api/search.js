@@ -4,15 +4,22 @@ import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
   const query = req.query.q || "";
-  const pagesToFetch = 3; // 3 páginas x ~15 resultados = ~45
+  const pagesToFetch = 3;
 
   try {
+    let seen = new Set();
     let videos = [];
 
     for (let page = 1; page <= pagesToFetch; page++) {
       const data = await GetListByKeyword(query, false, page);
       const current = data.items.filter(item => item.type === "video");
-      videos = videos.concat(current);
+
+      for (const video of current) {
+        if (!seen.has(video.id)) {
+          seen.add(video.id);
+          videos.push(video);
+        }
+      }
     }
 
     const resultado = videos.map(video => ({
