@@ -4,7 +4,7 @@ import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
   const query = req.query.q || "";
-  const pagesToFetch = 3;
+  const pagesToFetch = 5; // Cambiar a 5 para obtener más resultados
 
   try {
     let seen = new Set();
@@ -22,7 +22,8 @@ export default async function handler(req, res) {
       }
     }
 
-    const resultado = videos.map(video => ({
+    // Ajustar el número de resultados para que tenga más videos si es necesario
+    const resultado = videos.slice(0, 50).map(video => ({  // Limitar a 50 resultados
       titulo: video.title,
       miniatura: video.thumbnail?.thumbnails?.pop()?.url || '',
       canal: video.channelTitle || 'Desconocido',
