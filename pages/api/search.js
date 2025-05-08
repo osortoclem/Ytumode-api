@@ -4,7 +4,7 @@ import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
   const query = req.query.q || "";
-  const pagesToFetch = 5; // Cambiar a 5 para obtener más resultados
+  const pagesToFetch = 25; // Cambiar a 5 para obtener más resultados
 
   try {
     let seen = new Set();
