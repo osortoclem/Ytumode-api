@@ -2,7 +2,7 @@
 import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
-  // Habilita CORS
+  // Habilita CORS para cualquier origen
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -12,23 +12,16 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method !== "GET") {
-    res.status(405).json({ status: false, error: "Método no permitido" });
-    return;
-  }
-
   const query = req.query.q || "";
-  const pagesToFetch = 15; // Ajusta según la paginación que soporte la API
+  const pagesToFetch = 2;
 
   try {
-    const seen = new Set();
+    let seen = new Set();
     let videos = [];
 
-    let nextPageToken = null;
-
-    for (let page = 0; page < pagesToFetch; page++) {
+    for (let page = 1; page <= pagesToFetch; page++) {
       try {
-        const data = await GetListByKeyword(query, false, nextPageToken);
+        const data = await GetListByKeyword(query, false, page);
         const current = data.items.filter(item => item.type === "video");
 
         for (const video of current) {
@@ -37,13 +30,9 @@ export default async function handler(req, res) {
             videos.push(video);
           }
         }
-
-        nextPageToken = data.nextPageToken;
-        if (!nextPageToken) break;
-
       } catch (err) {
-        console.warn(`Error en la página ${page + 1}:`, err.message);
-        break;
+        console.warn(`Error en la página ${page}:`, err.message);
+        // Continúa con la siguiente página
       }
     }
 
