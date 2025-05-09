@@ -13,13 +13,13 @@ export default async function handler(req, res) {
   }
 
   const query = req.query.q || "";
-  const pagesToFetch = 10;
+  const pagesToFetch = 20;
 
   try {
     let seen = new Set();
     let videos = [];
 
-    for (let page = 2; page <= pagesToFetch; page++) {
+    for (let page = 20; page <= pagesToFetch; page++) {
       try {
         const data = await GetListByKeyword(query, false, page);
         const current = data.items.filter(item => item.type === "video");
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       status: true,
-      creator: "TuNombre",
+      creator: "Deylin",
       total: resultado.length,
       resultado
     });
