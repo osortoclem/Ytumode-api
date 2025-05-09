@@ -1,13 +1,14 @@
+// pages/api/search.js
 import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
   // Habilita CORS para cualquier origen
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
-    res.status(200).end(); // Responder a preflight
+    res.status(200).end(); // Preflight
     return;
   }
 
@@ -19,18 +20,23 @@ export default async function handler(req, res) {
     let videos = [];
 
     for (let page = 1; page <= pagesToFetch; page++) {
-      const data = await GetListByKeyword(query, false, page);
-      const current = data.items.filter(item => item.type === "video");
+      try {
+        const data = await GetListByKeyword(query, false, page);
+        const current = data.items.filter(item => item.type === "video");
 
-      for (const video of current) {
-        if (!seen.has(video.id)) {
-          seen.add(video.id);
-          videos.push(video);
+        for (const video of current) {
+          if (!seen.has(video.id)) {
+            seen.add(video.id);
+            videos.push(video);
+          }
         }
+      } catch (err) {
+        console.warn(`Error en la página ${page}:`, err.message);
+        // Continúa con la siguiente página
       }
     }
 
-    const resultado = videos.slice(0, 50).map(video => ({
+    const resultado = videos.map(video => ({
       titulo: video.title,
       miniatura: video.thumbnail?.thumbnails?.pop()?.url || '',
       canal: video.channelTitle || 'Desconocido',
@@ -44,6 +50,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       status: true,
       creator: "TuNombre",
+      total: resultado.length,
       resultado
     });
 
