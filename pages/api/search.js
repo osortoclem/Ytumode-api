@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     let seen = new Set();
     let videos = [];
 
-    for (let page = 1; page <= pagesToFetch; page++) {
+    for (let page = 2; page <= pagesToFetch; page++) {
       try {
         const data = await GetListByKeyword(query, false, page);
         const current = data.items.filter(item => item.type === "video");
