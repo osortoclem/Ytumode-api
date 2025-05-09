@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   const query = req.query.q || "";
-  const pagesToFetch = 2; // Ajusta según la paginación que soporte la API
+  const pagesToFetch = 50; // Ajusta según la paginación que soporte la API
 
   try {
     const seen = new Set();
