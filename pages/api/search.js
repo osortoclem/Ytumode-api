@@ -2,53 +2,71 @@
 import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
+  // Habilita CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-
-  const query = req.query.q || "";
-  if (!query || query.length < 2) {
-    return res.status(400).json({ status: false, error: "Consulta no válida" });
+  if (req.method === "OPTIONS") {
+    res.status(200).end(); // Preflight
+    return;
   }
 
+  if (req.method !== "GET") {
+    res.status(405).json({ status: false, error: "Método no permitido" });
+    return;
+  }
+
+  const query = req.query.q || "";
+  const pagesToFetch = 2; // Ajusta según la paginación que soporte la API
+
   try {
-    const pagesToFetch = 2;
     const seen = new Set();
-    const videos = [];
+    let videos = [];
 
-    for (let page = 1; page <= pagesToFetch; page++) {
-      const data = await GetListByKeyword(query, false, page);
-      const current = data.items.filter(item => item.type === "video");
+    let nextPageToken = null;
 
-      for (const video of current) {
-        if (!seen.has(video.id)) {
-          seen.add(video.id);
-          videos.push({
-            titulo: video.title,
-            miniatura: video.thumbnail?.thumbnails?.pop()?.url || '',
-            canal: video.channelTitle || 'Desconocido',
-            publicado: video.publishedTime || 'No disponible',
-            vistas: parseInt(video.viewCount) || 0,
-            likes: 'No disponible',
-            duracion: video.length?.simpleText || 'No disponible',
-            url: `https://youtube.com/watch?v=${video.id}`
-          });
+    for (let page = 0; page < pagesToFetch; page++) {
+      try {
+        const data = await GetListByKeyword(query, false, nextPageToken);
+        const current = data.items.filter(item => item.type === "video");
+
+        for (const video of current) {
+          if (!seen.has(video.id)) {
+            seen.add(video.id);
+            videos.push(video);
+          }
         }
+
+        nextPageToken = data.nextPageToken;
+        if (!nextPageToken) break;
+
+      } catch (err) {
+        console.warn(`Error en la página ${page + 1}:`, err.message);
+        break;
       }
     }
+
+    const resultado = videos.map(video => ({
+      titulo: video.title,
+      miniatura: video.thumbnail?.thumbnails?.pop()?.url || '',
+      canal: video.channelTitle || 'Desconocido',
+      publicado: video.publishedTime || 'No disponible',
+      vistas: parseInt(video.viewCount) || 0,
+      likes: 'No disponible',
+      duracion: video.length?.simpleText || 'No disponible',
+      url: `https://youtube.com/watch?v=${video.id}`
+    }));
 
     res.status(200).json({
       status: true,
       creator: "Deylin",
-      total: videos.length,
-      resultado: videos
+      total: resultado.length,
+      resultado
     });
 
   } catch (error) {
-    console.error("Error en la búsqueda:", error.message);
+    console.error("Error en la búsqueda:", error);
     res.status(500).json({ status: false, error: "Error al obtener resultados" });
   }
 }
