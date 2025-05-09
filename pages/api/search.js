@@ -1,10 +1,18 @@
-// pages/api/search.js
-
 import { GetListByKeyword } from "youtube-search-api";
 
 export default async function handler(req, res) {
+  // Habilita CORS para cualquier origen
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end(); // Responder a preflight
+    return;
+  }
+
   const query = req.query.q || "";
-  const pagesToFetch = 25; // Cambiar a 5 para obtener más resultados
+  const pagesToFetch = 10;
 
   try {
     let seen = new Set();
@@ -22,8 +30,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Ajustar el número de resultados para que tenga más videos si es necesario
-    const resultado = videos.slice(0, 50).map(video => ({  // Limitar a 50 resultados
+    const resultado = videos.slice(0, 50).map(video => ({
       titulo: video.title,
       miniatura: video.thumbnail?.thumbnails?.pop()?.url || '',
       canal: video.channelTitle || 'Desconocido',
