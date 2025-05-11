@@ -1,13 +1,14 @@
+import express from 'express';
 import axios from 'axios';
-import nodeID3 from 'node-id3';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import ffmpeg from 'fluent-ffmpeg';
+import path from 'path';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+const app = express();
+const port = process.env.PORT || 3000;
 
-export default async function handler(req, res) {
+app.get('/api/ytmp3', async (req, res) => {
   const videoUrl = req.query.url;
   if (!videoUrl) {
     return res.status(400).json({ error: 'Missing YouTube URL' });
@@ -18,28 +19,46 @@ export default async function handler(req, res) {
     const { data } = await axios.get(apiUrl);
     const { url: mp3Url, thumb: thumbnailUrl, title } = data.result;
 
-    // Descargar MP3 y miniatura como buffer
+    const id = uuidv4();
+    const tmpDir = '/tmp'; // En Render, puedes escribir a /tmp
+    const mp3Path = path.join(tmpDir, `${id}.mp3`);
+    const coverPath = path.join(tmpDir, `${id}.jpg`);
+
+    // Descargar MP3 y miniatura
     const [mp3Res, imgRes] = await Promise.all([
       axios.get(mp3Url, { responseType: 'arraybuffer' }),
-      axios.get(thumbnailUrl, { responseType: 'arraybuffer' })
+      axios.get(thumbnailUrl, { responseType: 'arraybuffer' }),
     ]);
 
-    const mp3Buffer = Buffer.from(mp3Res.data);
-    const imageBuffer = Buffer.from(imgRes.data);
+    fs.writeFileSync(mp3Path, mp3Res.data);
+    fs.writeFileSync(coverPath, imgRes.data);
 
-    // Agregar portada
-    const tags = {
-      title: title,
-      APIC: imageBuffer // Esto es lo mínimo para portada
-    };
+    // Incrustar la portada usando ffmpeg
+    const outputPath = path.join(tmpDir, `${id}_with_cover.mp3`);
 
-    const taggedBuffer = nodeID3.write(tags, mp3Buffer);
-
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Disposition', `attachment; filename="${title}.mp3"`);
-    res.send(taggedBuffer);
+    ffmpeg(mp3Path)
+      .input(coverPath)
+      .inputOptions('-f image2')
+      .outputOptions('-map 0 -map 1')
+      .output(outputPath)
+      .on('end', () => {
+        // Leer el archivo final y devolverlo
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Disposition', `attachment; filename="${title}.mp3"`);
+        const finalBuffer = fs.readFileSync(outputPath);
+        res.send(finalBuffer);
+      })
+      .on('error', (err) => {
+        console.error('Error al procesar MP3:', err);
+        res.status(500).json({ error: 'Failed to process MP3' });
+      })
+      .run();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to process MP3 😢' });
+    res.status(500).json({ error: 'Failed to fetch MP3 or Thumbnail' });
   }
-}
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
