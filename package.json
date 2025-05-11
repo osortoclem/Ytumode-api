@@ -9,9 +9,12 @@
     "start": "next start"
   },
   "dependencies": {
-    "yt-search": "^2.10.6",
+    "axios": "^1.6.0",
     "next": "latest",
+    "node-id3": "^0.2.0",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "uuid": "^9.0.0",
+    "yt-search": "^2.10.6"
   }
 }
