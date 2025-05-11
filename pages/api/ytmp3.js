@@ -40,6 +40,6 @@ export default async function handler(req, res) {
     res.send(taggedBuffer);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to process MP3' });
+    res.status(500).json({ error: 'Failed to process MP3 😢' });
   }
 }
