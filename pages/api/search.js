@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     const results = await ytSearch(query);
-    const videos = results.videos.slice(0, 20); // Cambia a 15, 20 o más si quieres
+    const videos = results.videos.slice(0, 50); // Cambia a 15, 20 o más si quieres
 
     const resultado = videos.map(video => ({
       titulo: video.title,
